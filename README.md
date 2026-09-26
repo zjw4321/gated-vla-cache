@@ -92,29 +92,28 @@ python experiments/robot/libero/run_libero_eval.py \
   --action_margin_threshold 0.65
 ```
 
-The task suites are `libero_spatial`, `libero_object`, `libero_goal` and `libero_10`, each with its matching checkpoint. A run evaluates 50 episodes per task (`--num_trials_per_task`), prints the success rate, writes a log to `experiments/logs/` and saves rollout videos to `rollouts/`. The transformers fork prints the average TFLOPs per step. Results on other GPUs or PyTorch versions can differ slightly from the paper.
+The task suites are `libero_spatial`, `libero_object`, `libero_goal` and `libero_10`, each with its matching checkpoint. A run evaluates 50 episodes per task (`--num_trials_per_task`), prints the success rate, writes a log to `experiments/logs/` and saves rollout videos to `rollouts/`. The transformers fork prints the average TFLOPs per step. Success rates on other GPUs or PyTorch versions can differ from the paper's.
 
-## Known issues
+## Changes since the paper
 
-**OpenVLA-OFT margin indexing.** The action-token logits used for the margin are indexed from the start of the sequence. On steps where VLA-Cache reuses tokens, the sequence is shorter, so the margin is read from shifted positions, or is empty and the gate does not fire. The OFT results in the paper were produced with this code, which is kept unchanged so they can be reproduced.
-
-We measured the effect on LIBERO-Spatial with 500 episodes per setting on one machine (RTX 5090, PyTorch 2.7). With the corrected indexing, success was 98.0% versus 98.4% with the released code, but the gate fired on 33.7% of policy queries instead of 14.5%, and average compute rose from 3.25 to 3.44 TFLOPs per step.
-
-To read the intended positions on every step, index from the end. In `_regression_or_discrete_prediction` in `openvla-oft/prismatic/extern/hf/modeling_prismatic.py`, replace
-
-```python
-action_token_logits = language_model_output.logits[
-    :,
-    NUM_PATCHES + NUM_PROMPT_TOKENS : NUM_PATCHES + NUM_PROMPT_TOKENS + ACTION_DIM * NUM_ACTIONS_CHUNK,
-    :,
-]
-```
-
-with
+**OpenVLA-OFT margin indexing.** In the code used for the paper, the action-token logits for the margin were indexed from the start of the sequence. On steps where VLA-Cache reuses tokens, the sequence is shorter, so the margin was read from shifted positions, or was empty and the gate did not fire. `main` indexes from the end, which reads the intended positions on every step (`_regression_or_discrete_prediction` in `openvla-oft/prismatic/extern/hf/modeling_prismatic.py`):
 
 ```python
 action_token_logits = language_model_output.logits[:, -(ACTION_DIM * NUM_ACTIONS_CHUNK) - 2 : -2, :]
 ```
+
+The OpenVLA-OFT results in the paper were produced with the earlier indexing, and θ_m = 0.50 was tuned with it. To reproduce the paper exactly, use the `iros2026` tag (`git checkout iros2026`). OpenVLA is not affected.
+
+We measured both versions on LIBERO-Spatial with 500 episodes per setting on one machine (RTX 5090, PyTorch 2.7):
+
+| OpenVLA-OFT, LIBERO-Spatial | Success | TFLOPs / step | Gate fired (share of queries) |
+|---|---|---|---|
+| Full inference | 98.4% | 4.00 | – |
+| VLA-Cache | 97.2% | 3.12 | – |
+| Gated VLA-Cache, paper code (`iros2026`) | 98.4% | 3.25 | 14.5% |
+| Gated VLA-Cache, `main` | 98.0% | 3.44 | 33.7% |
+
+With the corrected indexing the gate fires more than twice as often, which raises compute, while success stays within run-to-run noise (about ±0.9 points at this level). On this machine every method scores higher than in the paper's Table II, while the TFLOPs match it closely, so compare settings run on the same machine.
 
 ## Citation
 

@@ -915,11 +915,7 @@ class OpenVLAForActionPrediction(PrismaticForConditionalGeneration):
         )
 
         # Logit margin: mean top-1/top-2 probability gap over the action tokens
-        action_token_logits = language_model_output.logits[
-            :,
-            NUM_PATCHES + NUM_PROMPT_TOKENS : NUM_PATCHES + NUM_PROMPT_TOKENS + ACTION_DIM * NUM_ACTIONS_CHUNK,
-            :,
-        ]
+        action_token_logits = language_model_output.logits[:, -(ACTION_DIM * NUM_ACTIONS_CHUNK) - 2 : -2, :]
         action_top12_margin = None
         if action_token_logits.numel() > 0:
             top2_probs, _ = torch.topk(torch.softmax(action_token_logits, dim=-1), k=2, dim=-1)
