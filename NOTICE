@@ -1,0 +1,23 @@
+Gated VLA-Cache
+Copyright 2026 The Gated VLA-Cache Authors
+
+This project is a modified version of VLA-Cache
+(https://github.com/siyuhsu/vla-cache, commit a490988), which is licensed
+under the Apache License, Version 2.0 (see LICENSE).
+
+VLA-Cache builds on OpenVLA (https://github.com/openvla/openvla) and
+OpenVLA-OFT (https://github.com/moojink/openvla-oft), both licensed under the
+MIT License (see openvla/LICENSE and openvla-oft/LICENSE).
+
+Files changed from VLA-Cache (logit-margin gate):
+  openvla/prismatic/extern/hf/modeling_prismatic.py
+  openvla/experiments/robot/openvla_utils.py
+  openvla/experiments/robot/libero/run_libero_eval.py
+  openvla-oft/prismatic/extern/hf/modeling_prismatic.py
+  openvla-oft/experiments/robot/openvla_utils.py
+  openvla-oft/experiments/robot/libero/run_libero_eval.py
+
+Files added:
+  README.md
+  NOTICE
+  openvla/run.sh
